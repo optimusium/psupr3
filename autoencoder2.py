@@ -35,6 +35,7 @@ from tensorflow.keras.regularizers import l2
 from tensorflow.keras.utils import to_categorical,plot_model
 from tensorflow.keras.datasets import cifar10
 from tensorflow.keras import optimizers
+from tensorflow.keras import backend
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import IPython
 
@@ -244,6 +245,7 @@ np.random.seed(seed)
 modelname   = 'wks5_5'
 
 #Section 5: define the deep learning model
+#reference: https://www.datacamp.com/community/tutorials/autoencoder-classifier-python
 def createModel():
     #5.1 Set input shape which is 1 channel of 42x42 2D image
     inputShape=(42,42,1)
@@ -269,7 +271,7 @@ def createModel():
     #      Further downsize makes it harder to distinguish material fails near to edge but not at the edge and those real saw and grind defects.
     #      40 neurons are set for both clearer reconstructed image and better classification.
     #      Reducing number of neuron will cause more mis-classification and increase the loss in re-constructed image.
-    encoded     = Conv2D(40, (2, 2), padding="same",strides=(2,2),kernel_initializer='he_normal', activation='relu')(x)
+    encoded     = Conv2D(40, (2, 2), padding="same",strides=(2,2),kernel_initializer='he_normal', activation='relu',name="coded")(x)
     #x           = Conv2D(32, (2, 2), padding="same",activation='relu')(x)
     #x           = Lambda(lambda x: x * 2)(x)
     #x           = MaxPooling2D(pool_size=(2, 2), padding="same")(x)
@@ -427,14 +429,14 @@ callbacks_list  = [checkpoint,csv_logger,LRScheduler]
 model_train=model.fit(trDat, 
             trDat, 
             validation_data=(tsDat, tsDat), 
-            epochs=140, 
+            epochs=15, #140, 
             batch_size=3,
             callbacks=callbacks_list)
 
 #7.1 Plotting loss curve for autoencoder.
 loss=model_train.history['loss']
 val_loss=model_train.history['val_loss']
-epochs = range(140)
+epochs = range(15)
 plt.figure()
 plt.plot(epochs, loss, 'bo', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
@@ -498,7 +500,7 @@ callbacks_list  = [checkpoint,csv_logger,LRScheduler]
 model2.fit(trDat2, 
            trLbl2, 
            validation_data=(tsDat2, tsLbl2), 
-           epochs=60, 
+           epochs=15, #60, 
            batch_size=1,
            callbacks=callbacks_list)
 
@@ -515,6 +517,7 @@ model2Go.compile(loss='categorical_crossentropy',
 #11.1 Confusion matrix: The prediction is made on labelled data now to give the performance matrix.
 predicts_img    = modelGo.predict(tsDat2)
 predicts    = model2Go.predict(tsDat2)
+# with a Sequential model
 #print(predicts[0])
 #grayplt(tsDat[0])
 #grayplt(predicts_img[0])
@@ -540,9 +543,14 @@ print(confusion)
 
 # ...................................................................
 
+#11.2 getting  flattened code coeeficients
+get_layer_output = backend.function([model2Go.layers[0].input],
+                                  [modelGo.layers[4].output])
+layer_output = get_layer_output(tsDat2)
 
 
-def plotword(item,data=tsDat2,data2=predicts_img,labels=tsLbl2):
+
+def plotword(item,data=tsDat2,data2=predicts_img,labels=tsLbl2,coded=layer_output):
     clsname   = ['Normal Wafer','Wafer Saw Problem','Wafer Grinding Problem','Wafer Saw+Grinding Problem','Dielectric Issue','Saw+Dielectric Issue','Grinding+Dielectric Issue','Saw+Grinding+Dielectric Issues']
     
     if np.size(labels.shape) == 2:
@@ -556,6 +564,10 @@ def plotword(item,data=tsDat2,data2=predicts_img,labels=tsLbl2):
     grayplt(data[item],title=txt)
     #print reconstructed image
     grayplt(data2[item],title=txt)
+    #print code coeeficients
+    #print code coeeficients
+    #print("flattened coeeficients:")
+    #print(coded)
     
     
     
@@ -581,6 +593,7 @@ plt.plot(records['val_acc'])
 plt.yticks([0.93,0.95,0.97,0.99])
 plt.title('Accuracy',fontsize=12)
 plt.show()
+
 
 #Showing image of each class before and after going thru autoencoder.
 exampled=[]
