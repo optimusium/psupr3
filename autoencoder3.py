@@ -442,14 +442,14 @@ callbacks_list  = [checkpoint,csv_logger,LRScheduler]
 model_train=model.fit(trDat, 
             trDat, 
             validation_data=(tsDat, tsDat), 
-            epochs=15, #140, 
+            epochs=140, 
             batch_size=3,
             callbacks=callbacks_list)
 
 #7.1 Plotting loss curve for autoencoder.
 loss=model_train.history['loss']
 val_loss=model_train.history['val_loss']
-epochs = range(15)
+epochs = range(140)
 plt.figure()
 plt.plot(epochs, loss, 'bo', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
